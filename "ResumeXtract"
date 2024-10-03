@@ -1,0 +1,60 @@
+pip install PyPDF2
+import PyPDF2
+import re
+
+class ResumeParser:
+    def __init__(self, resume_path):
+        self.resume_path = resume_path
+        self.text = self.extract_text()
+    
+    def extract_text(self):
+        text = ""
+        try:
+            with open(self.resume_path, 'rb') as file:
+                reader = PyPDF2.PdfReader(file)
+                for page in reader.pages:
+                    text += page.extract_text()
+        except FileNotFoundError:
+            print("Resume file not found.")
+        return text
+
+    def parse_contact_info(self):
+        email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+        phone_pattern = r'\b\d{10}\b'
+
+        email = re.findall(email_pattern, self.text)
+        phone = re.findall(phone_pattern, self.text)
+
+        return {
+            "email": email[0] if email else "No email found",
+            "phone": phone[0] if phone else "No phone number found"
+        }
+    
+    def parse_skills(self, skills_list):
+        skills_found = []
+        for skill in skills_list:
+            if re.search(r'\b' + re.escape(skill) + r'\b', self.text, re.IGNORECASE):
+                skills_found.append(skill)
+        return skills_found
+
+    def parse_education(self):
+        education_keywords = ['bachelor', 'master', 'phd', 'b.sc', 'm.sc', 'b.tech', 'm.tech']
+        education_found = []
+        for keyword in education_keywords:
+            if re.search(r'\b' + keyword + r'\b', self.text, re.IGNORECASE):
+                education_found.append(keyword.capitalize())
+        return education_found
+
+# Usage example
+resume_path = r'C:\Users\ASUS\Downloads\Divya_RESUME.pdf'  # Change the path to the location of your resume
+parser = ResumeParser(resume_path)
+
+contact_info = parser.parse_contact_info()
+print("Contact Info:", contact_info)
+
+skills_list = ['Python', 'Data Analysis', 'Machine Learning', 'SQL']
+skills = parser.parse_skills(skills_list)
+print("Skills Found:", skills)
+
+education = parser.parse_education()
+print("Education Found:", education)
